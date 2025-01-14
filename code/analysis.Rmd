@@ -43,16 +43,11 @@ read_and_merge <- function(data) {
   bset$Sample_Size <- round(bset$Sample_Size, 0)
   colnames(bset) <- c("cbsa", "screening_frequency", "screening_sample_size")
   
-  
-  
   cset <- read.csv("cbsatocountycrosswalk.csv")
   cset$fipscounty <- str_pad(cset$fipscounty, width = 5, pad = "0")
   cset <- select(cset, cbsa, fipscounty)
   cset <- rename(cset, fips = fipscounty)
   cset <- na.omit(cset)
-  
-  
-  
   
   mset1 <- read.csv("pca_mortality_2011_2017.csv", skip = 2)
   colnames(mset1) <- c("fips", 
@@ -80,7 +75,6 @@ read_and_merge <- function(data) {
   mset1$black_rate_new <- parse_number(mset1$black_rate_new)
   mset1$mort_ratio_new <- mset1$black_rate_new / mset1$white_rate_new
   
-  
   mset2 <- read.csv("pca_mortality_1984_1989.csv", skip = 2)
   colnames(mset2) <- c("fips", 
                        "all_race_rate_old", 
@@ -106,7 +100,6 @@ read_and_merge <- function(data) {
   mset2$white_rate_old <- parse_number(mset2$white_rate_old)
   mset2$black_rate_old <- parse_number(mset2$black_rate_old)
   mset2$mort_ratio_old <- mset2$black_rate_old / mset2$white_rate_old
-  
   
   sset1 <- read.csv("SVI_2014_US_county.csv")
   sset1$fips <- str_pad(as.character(sset1$FIPS), width = 5, pad = "0")
