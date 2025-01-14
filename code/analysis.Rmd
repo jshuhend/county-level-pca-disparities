@@ -29,6 +29,9 @@ library(biscale)
 library(ggalluvial)
 library(viridis)
 
+# may need to be adjusted for other machines...
+setwd("C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Data")
+
 read_and_merge <- function(data) {
   bset <- read.csv("Behavioral_Risk_Factors__Selected_Metropolitan_Area_Risk_Trends__SMART__MMSA_Prevalence_Data__2011_to_Present__20240711.csv")
   bset <- filter(bset, Year != 2020)
@@ -166,6 +169,8 @@ dset <- read_and_merge(data)
 We visualize the overall mortality rates of black and white men in SEER with a simple line graph from 1980 to 2019. We add a vertical line at 1990 to delineate when PSA screening became widespread in the US
 
 ```{r}
+setwd("C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Data")
+
 trends <- read.csv("1980_2019_mort.csv", skip = 1)
 colnames(trends) <- c("year", "whiterate", "whitecount", "whitepop", "blackrate", "blackcount", "blackpop")
 
@@ -307,6 +312,8 @@ print(finalPlot)
 We produce an alluvial plot to show the consistency (or lack thereof) of screening frequencies by county
 
 ```{r}
+setwd("C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Data")
+
 scr <- read.csv("Behavioral_Risk_Factors__Selected_Metropolitan_Area_Risk_Trends__SMART__MMSA_Prevalence_Data__2011_to_Present__20240711.csv")
 
 scr <- filter(scr, Year != 2020, Response != "No")
@@ -453,7 +460,7 @@ scatter_plot_1
 ```{r}
 scatter_plot_2 <- ggplot(dset, aes(x = screening_frequency, y = mort_ratio_old, size = 1/variance_ratio_old)) +
   geom_point(color = "darkblue", alpha = 0.57) + 
-  geom_smooth(method = "lm", aes(weight = 1 / variance_ratio_old), se = FALSE, linewidth = 1.25, color = "red") +
+  geom_smooth(method = "lm", aes(weight = 1 / variance_ratio_old), se = FALSE, linewidth = 1.25, color = "orange") +
   labs(
     x = "Screening Frequency",
     y = "Mortality Rate Ratio (B/W)",
