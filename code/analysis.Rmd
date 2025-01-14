@@ -470,15 +470,3 @@ scatter_plot_2 <- ggplot(dset, aes(x = screening_frequency, y = mort_ratio_old, 
 
 scatter_plot_2
 ```
-
-
-
-
-
-
-
-
-
-
-
-
