@@ -12,13 +12,7 @@ This study aims to investigate the relationship between Prostate-Specific Antige
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir = "C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Data")
-```
 
-## Initial setup
-
-First we load the relevant packages and read the data.(delta method calculations included) 
-
-```{r}
 library(tidyverse)
 library(magrittr)
 library(gtsummary)
@@ -29,9 +23,15 @@ library(cowplot)
 library(biscale)
 library(ggalluvial)
 library(viridis)
+```
 
+## Initial setup
+
+First we load the relevant packages and read the data.(delta method calculations included) 
+
+```{r}
 # may need to be adjusted for other machines...
-setwd("C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Data")
+#setwd("C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Data")
 
 read_and_merge <- function(data) {
   bset <- read.csv("Behavioral_Risk_Factors__Selected_Metropolitan_Area_Risk_Trends__SMART__MMSA_Prevalence_Data__2011_to_Present__20240711.csv")
@@ -165,7 +165,7 @@ dset <- read_and_merge(data)
 We visualize the overall mortality rates of black and white men in SEER with a simple line graph from 1980 to 2019. We add a vertical line at 1990 to delineate when PSA screening became widespread in the US
 
 ```{r}
-setwd("C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Data")
+#setwd("C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Data")
 
 trends <- read.csv("1980_2019_mort.csv", skip = 1)
 colnames(trends) <- c("year", "whiterate", "whitecount", "whitepop", "blackrate", "blackcount", "blackpop")
@@ -447,14 +447,23 @@ riset <- data.frame(
 riset$ratio <- riset$black_rate / riset$white_rate 
 
 
-model_interaction <- lm(? ~ screening_frequency + time + screening_frequency * time,
-                 data = riset,
-                 weights = 1 / ?)
+model_interaction <- lm(ratio ~ screening_frequency + time + screening_frequency * time,
+                 data = riset)#,
+                 #weights = 1 / )
 
 t4 <- tbl_regression(model_interaction)
 
 t4
 ```
+
+```{r}
+coef(summary(model_interaction))
+```
+
+```{r}
+car::deltaMethod(model_interaction, "screening_frequency + time + `screening_frequency:time`")
+```
+
 
 ## Scatter plots
 
