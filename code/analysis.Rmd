@@ -11,6 +11,7 @@ This study aims to investigate the relationship between Prostate-Specific Antige
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Data")
 ```
 
 ## Initial setup
@@ -150,6 +151,8 @@ read_and_merge <- function(data) {
   dset$white_variance_old <- dset$white_count_old / dset$white_pop_old ^ 2 * 1e5 ^ 2
   dset$black_variance_old <- dset$black_count_old / dset$black_pop_old ^ 2 * 1e5 ^ 2
   dset$variance_ratio_old <- 1/dset$black_rate_old ^ 2 * dset$white_variance_old + 1/dset$white_rate_old ^ 2 * dset$black_variance_old
+  
+  dset$variance_ratio_diff <- dset$variance_ratio_old + dset$variance_ratio_new
   
   return(dset)
 }
@@ -408,17 +411,49 @@ t2
 
 # Regression with the difference in mortality ratio from the pre PSA era and the PSA era as the dependent variable
 
+|psa era mortality ratio - pre psa era mortality ratio| = screening frequency
+
 ```{r}
 # how to weight?
-rdset <- select(dset, diff, screening_frequency)
+rdset <- select(dset, diff, screening_frequency, variance_ratio_diff)
+rdset$screening_frequency <- rdset$screening_frequency / 10
+rdset <- na.omit(rdset)
 
 model_diff <- lm(diff ~ screening_frequency,
                  data = rdset,
-                 weights = 1 / #variance ratio old? variance ratio new?)
+                 weights = 1 / variance_ratio_diff)
 
 t3 <- tbl_regression(model_diff)
 
 t3
+```
+
+# Regression with interaction term 
+
+```{r}
+??
+riset <- select(dset, screening_frequency, white_rate_old, white_rate_new, black_rate_old, black_rate_new, fips)
+riset$screening_frequency <- riset$screening_frequency / 10
+#riset <- na.omit(riset)
+
+riset <- data.frame(
+  fips = rep(riset$fips, 2),                                 
+  screening_frequency = rep(riset$screening_frequency, 2),   
+  time = rep(c(0, 1), each = nrow(riset)),         
+  white_rate = c(riset$white_rate_old, riset$white_rate_new), 
+  black_rate = c(riset$black_rate_old, riset$black_rate_new)  
+)
+
+riset$ratio <- riset$black_rate / riset$white_rate 
+
+
+model_interaction <- lm(? ~ screening_frequency + time + screening_frequency * time,
+                 data = riset,
+                 weights = 1 / ?)
+
+t4 <- tbl_regression(model_interaction)
+
+t4
 ```
 
 ## Scatter plots
@@ -470,3 +505,107 @@ scatter_plot_2 <- ggplot(dset, aes(x = screening_frequency, y = mort_ratio_old, 
 
 scatter_plot_2
 ```
+
+## Table (results)
+
+shows which counties we have data for. Using all years of screening and mortality data from two periods
+
+```{r}
+setwd("C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Data")
+
+count_table <- function(data){
+  
+  bset <- read.csv("Behavioral_Risk_Factors__Selected_Metropolitan_Area_Risk_Trends__SMART__MMSA_Prevalence_Data__2011_to_Present__20240711.csv")
+  bset <- filter(bset, Year != 2020)
+  bset <- filter(bset, Response != "No")
+  bset <- select(bset, Year, Locationabbr, Data_value)  
+  colnames(bset) <- c("Year", "cbsa", "Screening Frequency")
+  bset <- pivot_wider(bset, names_from = Year, values_from = "Screening Frequency", names_prefix = "Screening Frequency ")
+  bset <- bset[, c(1, ncol(bset):2)]
+
+  cset <- read.csv("cbsatocountycrosswalk.csv")
+  cset$fipscounty <- str_pad(cset$fipscounty, width = 5, pad = "0")
+  cset <- select(cset, cbsa, fipscounty)
+  cset <- rename(cset, fips = fipscounty)
+  cset <- na.omit(cset)
+  
+  cset <- read.csv("cbsatocountycrosswalk.csv")
+  cset$fipscounty <- str_pad(cset$fipscounty, width = 5, pad = "0")
+  cset <- select(cset, cbsa, fipscounty)
+  cset <- rename(cset, fips = fipscounty)
+  cset <- na.omit(cset)
+  
+  mset1 <- read.csv("pca_mortality_2011_2017.csv", skip = 2)
+  colnames(mset1) <- c("fips", 
+                       "all_race_rate_new", 
+                       "all_race_count_new", 
+                       "all_race_pop_new", 
+                       "white_rate_new", 
+                       "white_count_new", 
+                       "white_pop_new", 
+                       "black_rate_new", 
+                       "black_count_new", 
+                       "black_pop_new", 
+                       "other_ai_rate_new", 
+                       "other_ai_count_new", 
+                       "other_ai_pop_new", 
+                       "other_uns_rate_new", 
+                       "other_uns_count_new", 
+                       "other_uns_pop_new"
+  )
+  mset1 <- select(mset1, "fips", "white_rate_new", "white_count_new", "white_pop_new", "black_rate_new", "black_count_new", "black_pop_new")
+  mset1 <- mutate_all(mset1, ~na_if(., "^"))
+  mset1$fips <- str_extract(mset1$fips, "\\d{5}")
+  mset1 <- na.omit(mset1)
+  mset1$white_rate_new <- parse_number(mset1$white_rate_new)
+  mset1$black_rate_new <- parse_number(mset1$black_rate_new)
+  mset1$mort_ratio_new <- mset1$black_rate_new / mset1$white_rate_new
+  
+  mset2 <- read.csv("pca_mortality_1984_1989.csv", skip = 2)
+  colnames(mset2) <- c("fips", 
+                       "all_race_rate_old", 
+                       "all_race_count_old", 
+                       "all_race_pop_old",
+                       "white_rate_old", 
+                       "white_count_old", 
+                       "white_pop_old", 
+                       "black_rate_old", 
+                       "black_count_old", 
+                       "black_pop_old", 
+                       "other_ai_rate_old", 
+                       "other_ai_coun_oldt", 
+                       "other_ai_pop_old", 
+                       "other_uns_rate_old", 
+                       "other_uns_count_old", 
+                       "other_uns_pop_old"
+  )
+  mset2 <- select(mset2, "fips", "white_rate_old", "white_count_old", "white_pop_old", "black_rate_old", "black_count_old", "black_pop_old")
+  mset2 <- mutate_all(mset2, ~na_if(., "^"))
+  mset2$fips <- str_extract(mset2$fips, "\\d{5}")
+  mset2 <- na.omit(mset2)
+  mset2$white_rate_old <- parse_number(mset2$white_rate_old)
+  mset2$black_rate_old <- parse_number(mset2$black_rate_old)
+  mset2$mort_ratio_old <- mset2$black_rate_old / mset2$white_rate_old
+  
+  tset <- full_join(bset, cset, by = "cbsa")
+  tset <- full_join(tset, mset1, by = "fips")
+  tset <- full_join(tset, mset2, by = "fips")
+  
+  return(tset)
+}
+
+tset <- count_table(data)
+
+write.csv(tset, "C:/Users/jshuhend/OneDrive - Fred Hutch Cancer Center/Projects/PCa-Disparities/Output/pca_psa_data_table.csv")
+
+
+
+
+
+```
+
+
+
+
+
+
